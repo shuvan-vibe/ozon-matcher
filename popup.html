@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="cropper.min.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -21,6 +22,7 @@
     <label for="search-term">Search Term:</label>
     <div style="display: flex; gap: 8px;">
       <input type="text" id="search-term" placeholder="e.g. беспроводные наушники">
+      <button id="paste-text-btn" type="button" style="width: auto; padding: 0 12px; background-color: #17a2b8; font-size: 13px;">📋 Paste</button>
       <button id="clear-btn" type="button" style="width: auto; padding: 0 12px; background-color: #6c757d; font-size: 13px;">Clear</button>
     </div>
   </div>
@@ -30,6 +32,7 @@
     <div id="drop-zone" class="drop-zone">
       <span class="placeholder">Click to upload or paste image</span>
       <img id="preview-img" style="display:none;" />
+      <button id="crop-btn" type="button" style="display:none;" title="Crop Image">✂️</button>
       <input type="file" id="file-input" accept="image/*" style="display:none;">
     </div>
   </div>
@@ -42,6 +45,19 @@
   
   <div id="status" class="status">Waiting for input...</div>
 
+  <div id="crop-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <div class="crop-container">
+        <img id="crop-image" />
+      </div>
+      <div class="modal-actions">
+        <button id="cancel-crop-btn" type="button">Cancel</button>
+        <button id="save-crop-btn" type="button">Save Crop</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="cropper.min.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

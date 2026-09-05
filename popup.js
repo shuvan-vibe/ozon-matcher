@@ -13,8 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const scanCounter = document.getElementById('scan-counter');
   const scanCountVal = document.getElementById('scan-count-val');
   const changeIconBtn = document.getElementById('change-icon-btn');
+  const pasteTextBtn = document.getElementById('paste-text-btn');
+  const cropBtn = document.getElementById('crop-btn');
+  const cropModal = document.getElementById('crop-modal');
+  const cropImage = document.getElementById('crop-image');
+  const cancelCropBtn = document.getElementById('cancel-crop-btn');
+  const saveCropBtn = document.getElementById('save-crop-btn');
 
   let imageDataUrl = null;
+  let cropper = null;
   let currentIconIndex = 1;
   const totalIcons = 4;
 
@@ -46,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     imageDataUrl = dataUrl;
     previewImg.src = dataUrl;
     previewImg.style.display = 'block';
+    cropBtn.style.display = 'flex';
     placeholder.style.display = 'none';
     updateStartBtn();
   }
@@ -56,6 +64,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   searchTermInput.addEventListener('input', updateStartBtn);
   
+  pasteTextBtn.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        searchTermInput.value = text;
+        updateStartBtn();
+      }
+    } catch (err) {
+      console.error('Failed to read clipboard text: ', err);
+    }
+  });
+
   clearBtn.addEventListener('click', () => {
     searchTermInput.value = '';
     updateStartBtn();
@@ -110,6 +130,39 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.onload = (e) => setImage(e.target.result);
     reader.readAsDataURL(file);
   }
+
+  // Cropper logic
+  cropBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // prevent triggering dropZone click
+    if (!imageDataUrl) return;
+    cropImage.src = imageDataUrl;
+    cropModal.style.display = 'flex';
+    cropper = new Cropper(cropImage, {
+      viewMode: 1,
+      autoCropArea: 1,
+      responsive: true
+    });
+  });
+
+  cancelCropBtn.addEventListener('click', () => {
+    if (cropper) {
+      cropper.destroy();
+      cropper = null;
+    }
+    cropModal.style.display = 'none';
+  });
+
+  saveCropBtn.addEventListener('click', () => {
+    if (cropper) {
+      const canvas = cropper.getCroppedCanvas();
+      if (canvas) {
+        setImage(canvas.toDataURL());
+      }
+      cropper.destroy();
+      cropper = null;
+    }
+    cropModal.style.display = 'none';
+  });
 
   function setScanningState(isScanning) {
     if (isScanning) {
