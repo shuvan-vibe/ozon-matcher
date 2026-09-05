@@ -265,10 +265,9 @@ function highlightCard(card, matchPercent) {
     if (overlay.parentNode) {
       overlay.parentNode.removeChild(overlay);
     }
-    // Keep a subtle border so user still knows which one matched
     card.style.transform = 'none';
     card.style.boxShadow = 'none';
-    card.style.border = '3px solid #39ff14';
+    card.style.border = 'none';
   }
   
   let hideTimeout = setTimeout(hideOverlay, 5000);
