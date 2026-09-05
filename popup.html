@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <h2 style="margin: 0;">Ozon Matcher</h2>
+      <button id="change-icon-btn" type="button" style="padding: 4px 8px; font-size: 11px; background-color: #ff9800; width: auto;" title="Change Extension Icon">🎨 Icon</button>
+    </div>
+    <div id="scan-counter" style="font-size: 13px; color: #666; font-weight: bold; display: none; padding-top: 4px;">Scanned: <span id="scan-count-val">0</span></div>
+  </div>
+  
+  <button id="start-btn" disabled>Start Scan</button>
+  <button id="stop-btn" style="display:none;">Stop Scan</button>
+
+  <div class="input-group" style="margin-top: 16px;">
+    <label for="search-term">Search Term:</label>
+    <div style="display: flex; gap: 8px;">
+      <input type="text" id="search-term" placeholder="e.g. беспроводные наушники">
+      <button id="clear-btn" type="button" style="width: auto; padding: 0 12px; background-color: #6c757d; font-size: 13px;">Clear</button>
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label>Reference Image:</label>
+    <div id="drop-zone" class="drop-zone">
+      <span class="placeholder">Click to upload or paste image</span>
+      <img id="preview-img" style="display:none;" />
+      <input type="file" id="file-input" accept="image/*" style="display:none;">
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label for="threshold">Match Threshold: <span id="threshold-val">65%</span></label>
+    <input type="range" id="threshold" min="30" max="100" value="65">
+    <div style="font-size: 11px; color: #666; margin-top: 4px;">Lower this if your reference image has badges or extra text (like a screenshot).</div>
+  </div>
+  
+  <div id="status" class="status">Waiting for input...</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
