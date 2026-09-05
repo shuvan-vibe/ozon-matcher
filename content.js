@@ -106,7 +106,7 @@ function startAutoScroll() {
     // This ensures it scrolls down from the user's current position without jumping.
     window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' });
     
-  }, 1200);
+  }, 800);
 }
 
 function startObserver() {
@@ -142,32 +142,37 @@ async function scanCurrentCards() {
     card.dataset.scanned = "true";
     processedUrls.add(src);
     
-    try {
-      const result = await chrome.runtime.sendMessage({ action: 'fetchImage', url: src });
-      if (!result.success) continue;
+    // Process images in parallel without blocking the loop
+    processCard(card, src);
+  }
+}
+
+async function processCard(card, src) {
+  try {
+    const result = await chrome.runtime.sendMessage({ action: 'fetchImage', url: src });
+    if (!result.success) return;
+    
+    const checkImg = new Image();
+    checkImg.onload = () => {
+      if (!isScanning || isPaused) return;
+      const targetHash = computeDHash(checkImg);
+      const diff = hashDistance(refHash, targetHash);
+      const matchPercent = 100 - (diff / refHash.length) * 100;
       
-      const checkImg = new Image();
-      checkImg.onload = () => {
-        if (!isScanning || isPaused) return;
-        const targetHash = computeDHash(checkImg);
-        const diff = hashDistance(refHash, targetHash);
-        const matchPercent = 100 - (diff / refHash.length) * 100;
-        
-        scannedCount++;
-        chrome.storage.local.set({ scannedCount });
-        
-        console.log(`Match percent for ${src}: ${matchPercent.toFixed(2)}% (Threshold: ${matchThreshold}%)`);
-        
-        if (matchPercent >= matchThreshold) {
-          highlightCard(card, matchPercent);
-          chrome.runtime.sendMessage({ action: 'matchFound', matchPercent: matchPercent.toFixed(1) });
-          stopScanner(`Found match! (${matchPercent.toFixed(1)}%)`);
-        }
-      };
-      checkImg.src = result.dataUrl;
-    } catch (e) {
-      console.error('Error checking image:', e);
-    }
+      scannedCount++;
+      chrome.storage.local.set({ scannedCount });
+      
+      console.log(`Match percent for ${src}: ${matchPercent.toFixed(2)}% (Threshold: ${matchThreshold}%)`);
+      
+      if (matchPercent >= matchThreshold) {
+        highlightCard(card, matchPercent);
+        chrome.runtime.sendMessage({ action: 'matchFound', matchPercent: matchPercent.toFixed(1) });
+        stopScanner(`Found match! (${matchPercent.toFixed(1)}%)`);
+      }
+    };
+    checkImg.src = result.dataUrl;
+  } catch (e) {
+    console.error('Error checking image:', e);
   }
 }
 
