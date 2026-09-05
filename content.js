@@ -95,16 +95,17 @@ function startAutoScroll() {
       scrollInterval = null;
       return;
     }
-    // Ozon scroll fix: find the last card and scroll it into view
-    const cards = document.querySelectorAll('.tile-root');
-    if (cards.length > 0) {
-      captchaNotified = false;
-      cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end' });
-    } else if (document.title.includes('Captcha') && !captchaNotified) {
+    
+    if (document.title.includes('Captcha') && !captchaNotified) {
       captchaNotified = true;
       chrome.runtime.sendMessage({ action: 'captchaDetected' });
+      return;
     }
-    // If there are no cards (e.g., during a Captcha challenge), we simply do nothing and wait.
+
+    // Use window.scrollBy instead of scrollIntoView to handle DOM virtualization safely.
+    // This ensures it scrolls down from the user's current position without jumping.
+    window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' });
+    
   }, 1200);
 }
 
