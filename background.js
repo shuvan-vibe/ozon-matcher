@@ -1,3 +1,11 @@
+// Restore user's custom icon on startup
+chrome.storage.local.get(['iconIndex'], (data) => {
+  if (data.iconIndex) {
+    const iconPath = data.iconIndex === 1 ? 'icon128.png' : `icon${data.iconIndex}.png`;
+    chrome.action.setIcon({ path: iconPath });
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'fetchImage') {
     fetch(request.url)
