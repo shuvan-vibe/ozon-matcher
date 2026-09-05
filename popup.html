@@ -7,56 +7,68 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <h2 style="margin: 0;">Ozon Matcher</h2>
-      <button id="change-icon-btn" type="button" style="padding: 4px 8px; font-size: 11px; background-color: #ff9800; width: auto;" title="Change Extension Icon">🎨 Icon</button>
-      <button id="history-btn" type="button" style="padding: 4px 8px; font-size: 11px; background-color: #6c757d; width: auto;" title="View Match History">🕒 History</button>
+  <!-- Header -->
+  <header>
+    <div class="header-title">
+      <h2>Ozon Matcher</h2>
     </div>
-    <div style="display: flex; flex-direction: column; align-items: flex-end;">
-      <div id="scan-counter" style="font-size: 13px; color: #666; font-weight: bold; display: none; padding-top: 4px;">Scanned: <span id="scan-count-val">0</span></div>
-      <div id="scan-timer-container" style="font-size: 12px; color: #888; display: none;">Time: <span id="scan-time-val">0.0s</span></div>
+    <div class="header-actions">
+      <button id="change-icon-btn" type="button" title="Change Extension Icon">🎨 Icon</button>
+      <button id="history-btn" type="button" title="View Match History">🕒 History</button>
     </div>
-  </div>
-  
-  <div style="display: flex; gap: 8px; margin-top: 16px;">
-    <button id="start-btn" disabled>Start Scan</button>
-    <button id="pause-btn" style="display:none; background-color: #ffc107; color: #000;">⏸ Pause</button>
-    <button id="stop-btn" style="display:none;">Stop Scan</button>
+  </header>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div id="scan-counter" class="stat-item" style="display: none;">Scanned: <span id="scan-count-val">0</span></div>
+    <div id="scan-timer-container" class="stat-item" style="display: none;">Time: <span id="scan-time-val">0.0s</span></div>
   </div>
 
-  <div class="input-group" style="margin-top: 16px;">
-    <label for="search-term">Search Term:</label>
-    <div style="display: flex; gap: 8px;">
-      <input type="text" id="search-term" placeholder="e.g. беспроводные наушники">
-      <button id="paste-text-btn" type="button" style="width: auto; padding: 0 12px; background-color: #17a2b8; font-size: 13px;">📋 Paste</button>
-      <button id="clear-btn" type="button" style="width: auto; padding: 0 12px; background-color: #6c757d; font-size: 13px;">Clear</button>
-    </div>
+  <!-- Main Actions -->
+  <div class="action-bar">
+    <button id="start-btn" class="btn-primary" disabled>Start Scan</button>
+    <button id="pause-btn" class="btn-warning" style="display:none;">⏸ Pause</button>
+    <button id="stop-btn" class="btn-danger" style="display:none;">Stop Scan</button>
   </div>
 
+  <!-- Search Term -->
   <div class="input-group">
-    <label>Reference Image:</label>
+    <label for="search-term">Search Term</label>
+    <div class="search-row">
+      <input type="text" id="search-term" placeholder="e.g. беспроводная зарядка">
+      <button id="paste-text-btn" type="button" class="btn-icon" title="Paste text from clipboard">📋</button>
+      <button id="clear-btn" type="button" class="btn-secondary">Clear</button>
+    </div>
+  </div>
+
+  <!-- Reference Image -->
+  <div class="input-group">
+    <label>Reference Image</label>
     <div id="drop-zone" class="drop-zone">
       <span class="placeholder">Click to upload or paste image</span>
-      <img id="preview-img" style="display:none;" />
-      <button id="crop-btn" type="button" style="display:none;" title="Crop Image">✂️</button>
+      <div class="image-wrapper">
+        <img id="preview-img" style="display:none;" />
+        <button id="crop-btn" type="button" style="display:none;" title="Crop Image">✂️</button>
+      </div>
       <input type="file" id="file-input" accept="image/*" style="display:none;">
     </div>
   </div>
 
+  <!-- Settings -->
   <div class="input-group">
     <label for="threshold">Match Threshold: <span id="threshold-val">65%</span></label>
     <input type="range" id="threshold" min="30" max="100" value="65">
-    <div style="font-size: 11px; color: #666; margin-top: 4px;">Lower this if your reference image has badges or extra text (like a screenshot).</div>
+    <div class="hint">Lower this if your reference image has badges or extra text.</div>
   </div>
 
-  <div class="input-group" style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+  <div class="input-group toggle-row">
     <label for="notifications-toggle" style="margin: 0; cursor: pointer;">Enable Notifications</label>
-    <input type="checkbox" id="notifications-toggle" checked style="cursor: pointer; width: 16px; height: 16px;">
+    <input type="checkbox" id="notifications-toggle" checked>
   </div>
   
   <div id="status" class="status">Waiting for input...</div>
 
+  <!-- Modals -->
   <div id="crop-modal" class="modal" style="display:none;">
     <div class="modal-content">
       <div class="crop-container">
@@ -70,12 +82,12 @@
   </div>
 
   <div id="history-modal" class="modal" style="display:none;">
-    <div class="modal-content" style="max-height: 80%; overflow-y: auto;">
-      <h3 style="margin: 0 0 16px 0; color: #fff; padding: 16px 16px 0 16px;">Match History (Last 5)</h3>
-      <div id="history-list" style="padding: 0 16px 16px 16px; color: #ddd; font-size: 13px;">
+    <div class="modal-content">
+      <h3 class="modal-header">Match History (Last 5)</h3>
+      <div id="history-list" class="modal-body">
       </div>
       <div class="modal-actions">
-        <button id="close-history-btn" type="button" style="background-color: #6c757d; width: 100%;">Close</button>
+        <button id="close-history-btn" type="button">Close</button>
       </div>
     </div>
   </div>
