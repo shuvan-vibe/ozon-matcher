@@ -75,3 +75,14 @@ button {
 }
 #cancel-crop-btn { background-color: #6c757d; }
 #save-crop-btn { background-color: #28a745; }
+
+.history-item {
+  background-color: #444;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 4px solid #39ff14;
+}
+.history-item:last-child { margin-bottom: 0; }
+.history-title { font-weight: bold; color: #fff; margin-bottom: 4px; }
+.history-stats { display: flex; justify-content: space-between; color: #aaa; font-size: 11px; }

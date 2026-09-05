@@ -13,7 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const thresholdVal = document.getElementById('threshold-val');
   const scanCounter = document.getElementById('scan-counter');
   const scanCountVal = document.getElementById('scan-count-val');
+  const scanTimerContainer = document.getElementById('scan-timer-container');
+  const scanTimeVal = document.getElementById('scan-time-val');
   const changeIconBtn = document.getElementById('change-icon-btn');
+  const historyBtn = document.getElementById('history-btn');
+  const historyModal = document.getElementById('history-modal');
+  const historyList = document.getElementById('history-list');
+  const closeHistoryBtn = document.getElementById('close-history-btn');
   const pasteTextBtn = document.getElementById('paste-text-btn');
   const cropBtn = document.getElementById('crop-btn');
   const cropModal = document.getElementById('crop-modal');
@@ -25,12 +31,20 @@ document.addEventListener('DOMContentLoaded', () => {
   let cropper = null;
   let currentIconIndex = 1;
   const totalIcons = 4;
+  let timerInterval = null;
+  let currentScanStartTime = null;
+
+  function updateTimerUI() {
+    if (!currentScanStartTime) return;
+    const elapsed = ((Date.now() - currentScanStartTime) / 1000).toFixed(1);
+    scanTimeVal.textContent = elapsed + 's';
+  }
 
   thresholdInput.addEventListener('input', (e) => {
     thresholdVal.textContent = e.target.value + '%';
   });
 
-  chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex'], (data) => {
+  chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex', 'scanStartTime', 'lastMatchTime'], (data) => {
     if (data.searchTerm) searchTermInput.value = data.searchTerm;
     if (data.imageDataUrl) setImage(data.imageDataUrl);
     if (data.iconIndex) currentIconIndex = data.iconIndex;
@@ -38,11 +52,25 @@ document.addEventListener('DOMContentLoaded', () => {
       thresholdInput.value = data.matchThreshold;
       thresholdVal.textContent = data.matchThreshold + '%';
     }
+    
+    if (data.lastMatchTime) {
+      scanTimerContainer.style.display = 'block';
+      scanTimeVal.textContent = data.lastMatchTime + 's';
+    }
+    
     if (data.isScanning) {
+      currentScanStartTime = data.scanStartTime;
+      scanTimerContainer.style.display = 'block';
+      if (!data.isPaused && currentScanStartTime) {
+        timerInterval = setInterval(updateTimerUI, 100);
+      }
       setScanningState(true, data.isPaused);
       if (data.scannedCount !== undefined) {
         scanCountVal.textContent = data.scannedCount;
+        scanCounter.style.display = 'block';
       }
+    } else {
+      if (data.scannedCount > 0) scanCounter.style.display = 'block';
     }
     if (data.scanStatus) {
       statusEl.textContent = data.scanStatus;
@@ -163,6 +191,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     cropModal.style.display = 'none';
   });
+  
+  historyBtn.addEventListener('click', () => {
+    chrome.storage.local.get(['matchHistory'], (data) => {
+      const history = data.matchHistory || [];
+      historyList.innerHTML = '';
+      if (history.length === 0) {
+        historyList.innerHTML = '<i>No matches yet.</i>';
+      } else {
+        history.forEach(item => {
+          historyList.innerHTML += `
+            <div class="history-item">
+              <div class="history-title">🔍 ${item.term}</div>
+              <div class="history-stats">
+                <span>Match: ${item.percent}%</span>
+                <span>Time: ${item.time}s</span>
+                <span>Scanned: ${item.count}</span>
+              </div>
+              <div style="font-size: 10px; color: #777; margin-top: 4px; text-align: right;">${item.date}</div>
+            </div>
+          `;
+        });
+      }
+      historyModal.style.display = 'flex';
+    });
+  });
+
+  closeHistoryBtn.addEventListener('click', () => {
+    historyModal.style.display = 'none';
+  });
 
   function setScanningState(isScanning, isPaused = false) {
     if (isScanning) {
@@ -170,6 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pauseBtn.style.display = 'block';
       stopBtn.style.display = 'block';
       scanCounter.style.display = 'block';
+      scanTimerContainer.style.display = 'block';
       
       if (isPaused) {
         pauseBtn.innerText = '▶ Resume';
@@ -184,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
       startBtn.style.display = 'block';
       pauseBtn.style.display = 'none';
       stopBtn.style.display = 'none';
-      scanCounter.style.display = 'none';
+      // Deliberately NOT hiding scanCounter and scanTimerContainer so they persist
     }
   }
 
@@ -193,6 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!searchTerm || !imageDataUrl) return;
 
     setScanningState(true, false);
+    
+    currentScanStartTime = Date.now();
+    scanCountVal.textContent = '0';
+    scanTimeVal.textContent = '0.0s';
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimerUI, 100);
 
     const threshold = parseInt(thresholdInput.value, 10) || 65;
 
@@ -203,6 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
       isScanning: true,
       isPaused: false,
       scannedCount: 0,
+      scanStartTime: currentScanStartTime,
+      lastMatchTime: null,
       scanStatus: 'Starting scan in new tab...'
     });
 
@@ -218,10 +284,17 @@ document.addEventListener('DOMContentLoaded', () => {
         scanStatus: newPausedState ? 'Scan paused.' : 'Scanning page...'
       });
       setScanningState(true, newPausedState);
+      
+      if (newPausedState) {
+        if (timerInterval) clearInterval(timerInterval);
+      } else {
+        if (!timerInterval) timerInterval = setInterval(updateTimerUI, 100);
+      }
     });
   });
 
   stopBtn.addEventListener('click', async () => {
+    if (timerInterval) clearInterval(timerInterval);
     await chrome.storage.local.set({ isScanning: false, isPaused: false, scanStatus: 'Scan manually stopped.' });
     setScanningState(false);
     
@@ -244,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
       scanCountVal.textContent = changes.scannedCount.newValue;
     }
     if (area === 'local' && changes.isScanning && !changes.isScanning.newValue) {
+      if (timerInterval) clearInterval(timerInterval);
       setScanningState(false);
     }
     if (area === 'local' && changes.isPaused) {

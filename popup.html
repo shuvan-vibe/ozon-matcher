@@ -11,8 +11,12 @@
     <div style="display: flex; align-items: center; gap: 8px;">
       <h2 style="margin: 0;">Ozon Matcher</h2>
       <button id="change-icon-btn" type="button" style="padding: 4px 8px; font-size: 11px; background-color: #ff9800; width: auto;" title="Change Extension Icon">🎨 Icon</button>
+      <button id="history-btn" type="button" style="padding: 4px 8px; font-size: 11px; background-color: #6c757d; width: auto;" title="View Match History">🕒 History</button>
     </div>
-    <div id="scan-counter" style="font-size: 13px; color: #666; font-weight: bold; display: none; padding-top: 4px;">Scanned: <span id="scan-count-val">0</span></div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end;">
+      <div id="scan-counter" style="font-size: 13px; color: #666; font-weight: bold; display: none; padding-top: 4px;">Scanned: <span id="scan-count-val">0</span></div>
+      <div id="scan-timer-container" style="font-size: 12px; color: #888; display: none;">Time: <span id="scan-time-val">0.0s</span></div>
+    </div>
   </div>
   
   <div style="display: flex; gap: 8px; margin-top: 16px;">
@@ -56,6 +60,17 @@
       <div class="modal-actions">
         <button id="cancel-crop-btn" type="button">Cancel</button>
         <button id="save-crop-btn" type="button">Save Crop</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-modal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-height: 80%; overflow-y: auto;">
+      <h3 style="margin: 0 0 16px 0; color: #fff; padding: 16px 16px 0 16px;">Match History (Last 5)</h3>
+      <div id="history-list" style="padding: 0 16px 16px 16px; color: #ddd; font-size: 13px;">
+      </div>
+      <div class="modal-actions">
+        <button id="close-history-btn" type="button" style="background-color: #6c757d; width: 100%;">Close</button>
       </div>
     </div>
   </div>

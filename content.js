@@ -168,6 +168,26 @@ async function processCard(card, src) {
         highlightCard(card, matchPercent);
         chrome.runtime.sendMessage({ action: 'matchFound', matchPercent: matchPercent.toFixed(1) });
         stopScanner(`Found match! (${matchPercent.toFixed(1)}%)`);
+        
+        chrome.storage.local.get(['matchHistory', 'scanStartTime', 'searchTerm', 'scannedCount'], (data) => {
+          let history = data.matchHistory || [];
+          const timeTaken = data.scanStartTime ? ((Date.now() - data.scanStartTime) / 1000).toFixed(1) : 0;
+          
+          history.unshift({
+            term: data.searchTerm || 'Unknown',
+            percent: matchPercent.toFixed(1),
+            count: data.scannedCount || 1,
+            time: timeTaken,
+            date: new Date().toLocaleString()
+          });
+          
+          if (history.length > 5) history.pop(); // Keep only last 5
+          
+          chrome.storage.local.set({ 
+            matchHistory: history,
+            lastMatchTime: timeTaken
+          });
+        });
       }
     };
     checkImg.src = result.dataUrl;
