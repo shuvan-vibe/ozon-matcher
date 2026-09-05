@@ -26,11 +26,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true; // Keep message channel open for async sendResponse
   } else if (request.action === 'matchFound') {
-    chrome.storage.local.get(['notificationsEnabled'], (data) => {
+    chrome.storage.local.get(['notificationsEnabled', 'iconIndex'], (data) => {
       if (data.notificationsEnabled !== false) {
+        let iconPath = 'icon128.png';
+        if (data.iconIndex && data.iconIndex !== 1) {
+          iconPath = `icon${data.iconIndex}.png`;
+        }
+        
         chrome.notifications.create({
           type: 'basic',
-          iconUrl: 'icon128.png',
+          iconUrl: iconPath,
           title: 'Ozon Matcher',
           message: `Match Found! (${request.matchPercent}% similarity)`,
           priority: 2
