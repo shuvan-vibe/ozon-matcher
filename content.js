@@ -106,7 +106,7 @@ function startAutoScroll() {
     // This ensures it scrolls down from the user's current position without jumping.
     window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' });
     
-  }, 800);
+  }, 500);
 }
 
 function startObserver() {
