@@ -40,6 +40,7 @@ function hashDistance(hash1, hash2) {
 
 // Global state
 let isScanning = false;
+let isPaused = false;
 let refHash = null;
 let matchThreshold = 65;
 let processedUrls = new Set();
@@ -49,10 +50,11 @@ let scannedCount = 0;
 let captchaNotified = false;
 
 async function initScanner() {
-  const data = await chrome.storage.local.get(['isScanning', 'imageDataUrl', 'matchThreshold']);
+  const data = await chrome.storage.local.get(['isScanning', 'isPaused', 'imageDataUrl', 'matchThreshold']);
   if (!data.isScanning || !data.imageDataUrl) return;
 
   isScanning = true;
+  isPaused = data.isPaused || false;
   matchThreshold = data.matchThreshold || 65;
   processedUrls.clear();
   scannedCount = 0;
@@ -61,10 +63,14 @@ async function initScanner() {
   const refImg = new Image();
   refImg.onload = () => {
     refHash = computeDHash(refImg);
-    chrome.storage.local.set({ scanStatus: 'Scanning page...' });
-    startObserver();
-    scanCurrentCards();
-    startAutoScroll();
+    if (!isPaused) {
+      chrome.storage.local.set({ scanStatus: 'Scanning page...' });
+      startObserver();
+      scanCurrentCards();
+      startAutoScroll();
+    } else {
+      chrome.storage.local.set({ scanStatus: 'Scan paused.' });
+    }
   };
   refImg.src = data.imageDataUrl;
 }
@@ -84,8 +90,9 @@ function stopScanner(message = 'Scan stopped') {
 
 function startAutoScroll() {
   scrollInterval = setInterval(() => {
-    if (!isScanning) {
+    if (!isScanning || isPaused) {
       clearInterval(scrollInterval);
+      scrollInterval = null;
       return;
     }
     // Ozon scroll fix: find the last card and scroll it into view
@@ -102,8 +109,9 @@ function startAutoScroll() {
 }
 
 function startObserver() {
+  if (observer) observer.disconnect();
   observer = new MutationObserver((mutations) => {
-    if (!isScanning) return;
+    if (!isScanning || isPaused) return;
     for (let mutation of mutations) {
       if (mutation.addedNodes.length) {
         scanCurrentCards();
@@ -139,7 +147,7 @@ async function scanCurrentCards() {
       
       const checkImg = new Image();
       checkImg.onload = () => {
-        if (!isScanning) return;
+        if (!isScanning || isPaused) return;
         const targetHash = computeDHash(checkImg);
         const diff = hashDistance(refHash, targetHash);
         const matchPercent = 100 - (diff / refHash.length) * 100;
@@ -183,14 +191,75 @@ function highlightCard(card, matchPercent) {
   overlay.style.zIndex = '999';
   overlay.style.boxSizing = 'border-box';
   overlay.style.pointerEvents = 'none';
-  overlay.innerText = `MATCH FOUND: ${matchPercent.toFixed(1)}%`;
+  overlay.style.display = 'flex';
+  overlay.style.flexDirection = 'column';
+  overlay.style.justifyContent = 'center';
+  overlay.style.alignItems = 'center';
   
+  const textEl = document.createElement('div');
+  textEl.innerText = `MATCH FOUND: ${matchPercent.toFixed(1)}%`;
+  overlay.appendChild(textEl);
+  
+  const continueBtn = document.createElement('button');
+  continueBtn.innerText = 'Not this one? Continue';
+  continueBtn.style.pointerEvents = 'auto'; // allow clicks
+  continueBtn.style.marginTop = '10px';
+  continueBtn.style.padding = '6px 12px';
+  continueBtn.style.backgroundColor = '#dc3545';
+  continueBtn.style.color = '#fff';
+  continueBtn.style.border = 'none';
+  continueBtn.style.borderRadius = '4px';
+  continueBtn.style.cursor = 'pointer';
+  continueBtn.style.fontSize = '14px';
+  
+  continueBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Dim highlight
+    card.style.border = '3px solid #ffc107';
+    card.style.boxShadow = 'none';
+    card.style.transform = 'none';
+    overlay.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
+    textEl.innerText = `Skipped (${matchPercent.toFixed(1)}%)`;
+    textEl.style.color = '#666';
+    continueBtn.style.display = 'none';
+    
+    resumeScanner();
+  };
+  
+  overlay.appendChild(continueBtn);
   card.appendChild(overlay);
   
   setTimeout(() => {
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, 100);
 }
+
+function resumeScanner() {
+  isScanning = true;
+  isPaused = false;
+  chrome.storage.local.set({ isScanning: true, isPaused: false, scanStatus: 'Scanning page...' });
+  startObserver();
+  scanCurrentCards();
+  startAutoScroll();
+}
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.isPaused) {
+    isPaused = changes.isPaused.newValue;
+    if (isPaused) {
+      if (observer) { observer.disconnect(); observer = null; }
+      if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null; }
+    } else {
+      if (isScanning) {
+        startObserver();
+        scanCurrentCards();
+        startAutoScroll();
+      }
+    }
+  }
+});
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'startScan') {

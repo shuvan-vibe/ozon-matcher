@@ -15,8 +15,11 @@
     <div id="scan-counter" style="font-size: 13px; color: #666; font-weight: bold; display: none; padding-top: 4px;">Scanned: <span id="scan-count-val">0</span></div>
   </div>
   
-  <button id="start-btn" disabled>Start Scan</button>
-  <button id="stop-btn" style="display:none;">Stop Scan</button>
+  <div style="display: flex; gap: 8px; margin-top: 16px;">
+    <button id="start-btn" disabled>Start Scan</button>
+    <button id="pause-btn" style="display:none; background-color: #ffc107; color: #000;">⏸ Pause</button>
+    <button id="stop-btn" style="display:none;">Stop Scan</button>
+  </div>
 
   <div class="input-group" style="margin-top: 16px;">
     <label for="search-term">Search Term:</label>

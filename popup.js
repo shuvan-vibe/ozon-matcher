@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const previewImg = document.getElementById('preview-img');
   const placeholder = document.querySelector('.placeholder');
   const startBtn = document.getElementById('start-btn');
+  const pauseBtn = document.getElementById('pause-btn');
   const stopBtn = document.getElementById('stop-btn');
   const clearBtn = document.getElementById('clear-btn');
   const searchTermInput = document.getElementById('search-term');
@@ -29,8 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     thresholdVal.textContent = e.target.value + '%';
   });
 
-  // Restore state if scanning
-  chrome.storage.local.get(['isScanning', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex'], (data) => {
+  chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex'], (data) => {
     if (data.searchTerm) searchTermInput.value = data.searchTerm;
     if (data.imageDataUrl) setImage(data.imageDataUrl);
     if (data.iconIndex) currentIconIndex = data.iconIndex;
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
       thresholdVal.textContent = data.matchThreshold + '%';
     }
     if (data.isScanning) {
-      setScanningState(true);
+      setScanningState(true, data.isPaused);
       if (data.scannedCount !== undefined) {
         scanCountVal.textContent = data.scannedCount;
       }
@@ -164,13 +164,25 @@ document.addEventListener('DOMContentLoaded', () => {
     cropModal.style.display = 'none';
   });
 
-  function setScanningState(isScanning) {
+  function setScanningState(isScanning, isPaused = false) {
     if (isScanning) {
       startBtn.style.display = 'none';
+      pauseBtn.style.display = 'block';
       stopBtn.style.display = 'block';
       scanCounter.style.display = 'block';
+      
+      if (isPaused) {
+        pauseBtn.innerText = '▶ Resume';
+        pauseBtn.style.backgroundColor = '#28a745';
+        pauseBtn.style.color = '#fff';
+      } else {
+        pauseBtn.innerText = '⏸ Pause';
+        pauseBtn.style.backgroundColor = '#ffc107';
+        pauseBtn.style.color = '#000';
+      }
     } else {
       startBtn.style.display = 'block';
+      pauseBtn.style.display = 'none';
       stopBtn.style.display = 'none';
       scanCounter.style.display = 'none';
     }
@@ -180,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchTerm = searchTermInput.value.trim();
     if (!searchTerm || !imageDataUrl) return;
 
-    setScanningState(true);
+    setScanningState(true, false);
 
     const threshold = parseInt(thresholdInput.value, 10) || 65;
 
@@ -189,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       imageDataUrl,
       matchThreshold: threshold,
       isScanning: true,
+      isPaused: false,
       scannedCount: 0,
       scanStatus: 'Starting scan in new tab...'
     });
@@ -197,8 +210,19 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.tabs.create({ url: targetUrl });
   });
 
+  pauseBtn.addEventListener('click', () => {
+    chrome.storage.local.get(['isPaused'], (data) => {
+      const newPausedState = !data.isPaused;
+      chrome.storage.local.set({ 
+        isPaused: newPausedState,
+        scanStatus: newPausedState ? 'Scan paused.' : 'Scanning page...'
+      });
+      setScanningState(true, newPausedState);
+    });
+  });
+
   stopBtn.addEventListener('click', async () => {
-    await chrome.storage.local.set({ isScanning: false, scanStatus: 'Scan manually stopped.' });
+    await chrome.storage.local.set({ isScanning: false, isPaused: false, scanStatus: 'Scan manually stopped.' });
     setScanningState(false);
     
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -221,6 +245,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (area === 'local' && changes.isScanning && !changes.isScanning.newValue) {
       setScanningState(false);
+    }
+    if (area === 'local' && changes.isPaused) {
+      // Sync pause state if changed from another popup instance
+      chrome.storage.local.get(['isScanning'], (data) => {
+        if (data.isScanning) {
+          setScanningState(true, changes.isPaused.newValue);
+        }
+      });
     }
   });
 });
