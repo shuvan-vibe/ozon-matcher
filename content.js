@@ -188,7 +188,8 @@ function highlightCard(card, matchPercent) {
   overlay.style.top = '0';
   overlay.style.left = '0';
   overlay.style.width = '100%';
-  overlay.style.backgroundColor = 'rgba(57, 255, 20, 0.2)';
+  overlay.style.height = '100%';
+  overlay.style.backgroundColor = 'rgba(57, 255, 20, 0.4)';
   overlay.style.color = '#000';
   overlay.style.fontWeight = 'bold';
   overlay.style.fontSize = '18px';
@@ -204,12 +205,29 @@ function highlightCard(card, matchPercent) {
   
   const textEl = document.createElement('div');
   textEl.innerText = `MATCH FOUND: ${matchPercent.toFixed(1)}%`;
+  textEl.style.backgroundColor = '#fff';
+  textEl.style.padding = '4px 8px';
+  textEl.style.borderRadius = '4px';
+  textEl.style.marginBottom = '10px';
   overlay.appendChild(textEl);
+  
+  const btnContainer = document.createElement('div');
+  btnContainer.style.display = 'flex';
+  btnContainer.style.gap = '8px';
+  btnContainer.style.pointerEvents = 'auto'; // allow clicks on buttons
+  
+  const hideBtn = document.createElement('button');
+  hideBtn.innerText = 'OK, hide';
+  hideBtn.style.padding = '6px 12px';
+  hideBtn.style.backgroundColor = '#28a745';
+  hideBtn.style.color = '#fff';
+  hideBtn.style.border = 'none';
+  hideBtn.style.borderRadius = '4px';
+  hideBtn.style.cursor = 'pointer';
+  hideBtn.style.fontSize = '14px';
   
   const continueBtn = document.createElement('button');
   continueBtn.innerText = 'Not this one? Continue';
-  continueBtn.style.pointerEvents = 'auto'; // allow clicks
-  continueBtn.style.marginTop = '10px';
   continueBtn.style.padding = '6px 12px';
   continueBtn.style.backgroundColor = '#dc3545';
   continueBtn.style.color = '#fff';
@@ -218,23 +236,54 @@ function highlightCard(card, matchPercent) {
   continueBtn.style.cursor = 'pointer';
   continueBtn.style.fontSize = '14px';
   
+  btnContainer.appendChild(hideBtn);
+  btnContainer.appendChild(continueBtn);
+  overlay.appendChild(btnContainer);
+  
+  function hideOverlay() {
+    clearTimeout(hideTimeout);
+    if (overlay.parentNode) {
+      overlay.parentNode.removeChild(overlay);
+    }
+    // Keep a subtle border so user still knows which one matched
+    card.style.transform = 'none';
+    card.style.boxShadow = 'none';
+    card.style.border = '3px solid #39ff14';
+  }
+  
+  let hideTimeout = setTimeout(hideOverlay, 5000);
+  
+  hideBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    hideOverlay();
+  };
+  
   continueBtn.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    clearTimeout(hideTimeout);
     
     // Dim highlight
     card.style.border = '3px solid #ffc107';
     card.style.boxShadow = 'none';
     card.style.transform = 'none';
-    overlay.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
+    overlay.style.backgroundColor = 'rgba(255, 193, 7, 0.2)';
     textEl.innerText = `Skipped (${matchPercent.toFixed(1)}%)`;
-    textEl.style.color = '#666';
-    continueBtn.style.display = 'none';
+    textEl.style.color = '#000';
+    btnContainer.style.display = 'none';
     
     resumeScanner();
+    
+    // Auto-hide the skipped overlay after 3 seconds too
+    setTimeout(() => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    }, 3000);
   };
   
-  overlay.appendChild(continueBtn);
   card.appendChild(overlay);
   
   setTimeout(() => {
