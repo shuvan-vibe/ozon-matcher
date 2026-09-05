@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cropImage = document.getElementById('crop-image');
   const cancelCropBtn = document.getElementById('cancel-crop-btn');
   const saveCropBtn = document.getElementById('save-crop-btn');
+  const notificationsToggle = document.getElementById('notifications-toggle');
 
   let imageDataUrl = null;
   let cropper = null;
@@ -44,13 +45,17 @@ document.addEventListener('DOMContentLoaded', () => {
     thresholdVal.textContent = e.target.value + '%';
   });
 
-  chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex', 'scanStartTime', 'lastMatchTime'], (data) => {
+  chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex', 'scanStartTime', 'lastMatchTime', 'notificationsEnabled'], (data) => {
     if (data.searchTerm) searchTermInput.value = data.searchTerm;
     if (data.imageDataUrl) setImage(data.imageDataUrl);
     if (data.iconIndex) currentIconIndex = data.iconIndex;
     if (data.matchThreshold) {
       thresholdInput.value = data.matchThreshold;
       thresholdVal.textContent = data.matchThreshold + '%';
+    }
+    
+    if (data.notificationsEnabled === false) {
+      notificationsToggle.checked = false;
     }
     
     if (data.lastMatchTime) {
@@ -107,6 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
   clearBtn.addEventListener('click', () => {
     searchTermInput.value = '';
     updateStartBtn();
+  });
+
+  notificationsToggle.addEventListener('change', (e) => {
+    chrome.storage.local.set({ notificationsEnabled: e.target.checked });
   });
 
   changeIconBtn.addEventListener('click', () => {

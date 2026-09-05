@@ -26,16 +26,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true; // Keep message channel open for async sendResponse
   } else if (request.action === 'matchFound') {
-    if (sender.tab && sender.tab.id) {
-      chrome.action.setBadgeText({ text: '!', tabId: sender.tab.id });
-      chrome.action.setBadgeBackgroundColor({ color: '#FF0000', tabId: sender.tab.id });
-    }
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icon128.png',
-      title: 'Ozon Matcher',
-      message: `Match Found! (${request.matchPercent}% similarity)`,
-      priority: 2
+    chrome.storage.local.get(['notificationsEnabled'], (data) => {
+      if (data.notificationsEnabled !== false) {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon128.png',
+          title: 'Ozon Matcher',
+          message: `Match Found! (${request.matchPercent}% similarity)`,
+          priority: 2
+        });
+      }
     });
     sendResponse({ success: true });
   } else if (request.action === 'captchaDetected') {
