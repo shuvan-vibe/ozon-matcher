@@ -9,6 +9,7 @@
   --accent-green: #39ff14;
   --accent-red: #dc3545;
   --accent-yellow: #ffc107;
+  --accent-orange: #fd7e14;
 }
 
 body {
@@ -57,7 +58,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .action-bar button { flex: 1; padding: 12px; font-size: 14px; }
 .btn-primary { background-color: var(--accent-blue); color: white; }
 .btn-primary:hover:not(:disabled) { background-color: var(--accent-blue-hover); }
-#start-btn:hover:not(:disabled) { background-color: #0d47a1; }
+
+#start-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; margin-bottom: 20px; }
+#start-btn:not(:disabled) { background-color: var(--accent-orange); color: white; }
+#start-btn:hover:not(:disabled) { background-color: #e86b02; }
 #start-btn:disabled { background-color: var(--border-color); color: var(--text-secondary); cursor: not-allowed; }
 
 #continue-scan-btn { width: 100%; padding: 12px; background-color: #dc3545; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; margin-bottom: 20px; }
@@ -101,7 +105,7 @@ input[type="text"]:focus { border-color: var(--accent-blue); }
 .action-btn:hover { background-color: rgba(0,0,0,0.9); transform: scale(1.1); }
 
 /* Sliders & Toggles */
-input[type="range"] { width: 100%; accent-color: var(--accent-blue); }
+input[type="range"] { width: 100%; accent-color: var(--accent-yellow); }
 
 .threshold-marks {
   display: flex;
@@ -118,8 +122,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent-blue); }
   transition: all 0.2s;
 }
 .threshold-marks span:hover {
-  background-color: var(--accent-blue);
-  color: white;
+  background-color: var(--accent-yellow);
+  color: #000;
 }
 .hint { font-size: 11px; color: #777; margin-top: 4px; line-height: 1.4; }
 .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
