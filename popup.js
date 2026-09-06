@@ -47,6 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   thresholdInput.addEventListener('input', (e) => {
     thresholdVal.textContent = e.target.value + '%';
+    chrome.storage.local.set({ matchThreshold: e.target.value });
+  });
+
+  document.querySelectorAll('.threshold-marks span').forEach(mark => {
+    mark.addEventListener('click', (e) => {
+      const val = e.target.getAttribute('data-val');
+      thresholdInput.value = val;
+      thresholdVal.textContent = val + '%';
+      chrome.storage.local.set({ matchThreshold: val });
+    });
   });
 
   chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex', 'scanStartTime', 'lastMatchTime', 'notificationsEnabled'], (data) => {
@@ -114,13 +124,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  searchTermInput.addEventListener('input', updateStartBtn);
+  searchTermInput.addEventListener('input', (e) => {
+    chrome.storage.local.set({ searchTerm: e.target.value });
+    updateStartBtn();
+  });
   
   pasteTextBtn.addEventListener('click', async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
         searchTermInput.value = text;
+        chrome.storage.local.set({ searchTerm: text });
         updateStartBtn();
       }
     } catch (err) {
@@ -130,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   clearBtn.addEventListener('click', () => {
     searchTermInput.value = '';
+    chrome.storage.local.remove(['searchTerm']);
     updateStartBtn();
   });
 
