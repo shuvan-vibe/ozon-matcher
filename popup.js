@@ -106,12 +106,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
+    // Ensure the Start Scan button is enabled if inputs are populated from storage
+    // We call this BEFORE setScanningState so it doesn't instantly revert the isMatch UI!
+    updateStartBtn();
+    
     if (!data.isScanning) {
       setScanningState(false, false, isMatch);
     }
-    
-    // Ensure the Start Scan button is enabled if inputs are populated from storage
-    updateStartBtn();
   });
 
   function handleImageUpload(dataUrl) {
