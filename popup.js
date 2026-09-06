@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function readFile(file) {
     const reader = new FileReader();
-    reader.onload = (e) => setImage(e.target.result);
+    reader.onload = (e) => handleImageUpload(e.target.result);
     reader.readAsDataURL(file);
   }
 
