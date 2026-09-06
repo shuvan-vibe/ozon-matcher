@@ -48,7 +48,10 @@
       <span class="placeholder">Click to upload or paste image</span>
       <div class="image-wrapper">
         <img id="preview-img" style="display:none;" />
-        <button id="crop-btn" type="button" style="display:none;" title="Crop Image">✂️</button>
+        <div id="image-actions" class="image-actions" style="display:none;">
+          <button id="auto-trim-btn" class="action-btn" type="button" title="Auto-Trim Borders">🪄</button>
+          <button id="crop-btn" class="action-btn" type="button" title="Manual Crop">✂️</button>
+        </div>
       </div>
       <input type="file" id="file-input" accept="image/*" style="display:none;">
     </div>

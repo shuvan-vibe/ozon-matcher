@@ -1,8 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const fileInput = document.getElementById('file-input');
   const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
   const previewImg = document.getElementById('preview-img');
-  const placeholder = document.querySelector('.placeholder');
+  const placeholder = dropZone.querySelector('.placeholder');
+  const imageActions = document.getElementById('image-actions');
+  const cropBtn = document.getElementById('crop-btn');
+  const autoTrimBtn = document.getElementById('auto-trim-btn');
   const startBtn = document.getElementById('start-btn');
   const pauseBtn = document.getElementById('pause-btn');
   const stopBtn = document.getElementById('stop-btn');
@@ -21,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const historyList = document.getElementById('history-list');
   const closeHistoryBtn = document.getElementById('close-history-btn');
   const pasteTextBtn = document.getElementById('paste-text-btn');
-  const cropBtn = document.getElementById('crop-btn');
   const cropModal = document.getElementById('crop-modal');
   const cropImage = document.getElementById('crop-image');
   const cancelCropBtn = document.getElementById('cancel-crop-btn');
@@ -47,7 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex', 'scanStartTime', 'lastMatchTime', 'notificationsEnabled'], (data) => {
     if (data.searchTerm) searchTermInput.value = data.searchTerm;
-    if (data.imageDataUrl) setImage(data.imageDataUrl);
+    if (data.imageDataUrl) {
+      imageDataUrl = data.imageDataUrl;
+      previewImg.src = data.imageDataUrl;
+      previewImg.style.display = 'block';
+      imageActions.style.display = 'flex';
+      placeholder.style.display = 'none';
+    }
     if (data.iconIndex) currentIconIndex = data.iconIndex;
     if (data.matchThreshold) {
       thresholdInput.value = data.matchThreshold;
@@ -82,12 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function setImage(dataUrl) {
+  function handleImageUpload(dataUrl) {
     imageDataUrl = dataUrl;
     previewImg.src = dataUrl;
     previewImg.style.display = 'block';
-    cropBtn.style.display = 'flex';
+    imageActions.style.display = 'flex';
     placeholder.style.display = 'none';
+    chrome.storage.local.set({ imageDataUrl });
     updateStartBtn();
   }
 
@@ -169,6 +178,82 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Cropper logic
+  // Auto-Trim Button
+  autoTrimBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!imageDataUrl) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      
+      // Sample top-left corner as background color
+      const bgR = data[0], bgG = data[1], bgB = data[2], bgA = data[3];
+      const tolerance = 20; 
+      
+      function isBg(r, g, b, a) {
+        if (a === 0 && bgA === 0) return true; // Check transparency
+        return Math.abs(r - bgR) <= tolerance && Math.abs(g - bgG) <= tolerance && Math.abs(b - bgB) <= tolerance;
+      }
+      
+      let top = 0, bottom = canvas.height, left = 0, right = canvas.width;
+      
+      outTop: for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          let i = (y * canvas.width + x) * 4;
+          if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { top = y; break outTop; }
+        }
+      }
+      outBottom: for (let y = canvas.height - 1; y >= 0; y--) {
+        for (let x = 0; x < canvas.width; x++) {
+          let i = (y * canvas.width + x) * 4;
+          if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { bottom = y + 1; break outBottom; }
+        }
+      }
+      outLeft: for (let x = 0; x < canvas.width; x++) {
+        for (let y = top; y < bottom; y++) {
+          let i = (y * canvas.width + x) * 4;
+          if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { left = x; break outLeft; }
+        }
+      }
+      outRight: for (let x = canvas.width - 1; x >= 0; x--) {
+        for (let y = top; y < bottom; y++) {
+          let i = (y * canvas.width + x) * 4;
+          if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { right = x + 1; break outRight; }
+        }
+      }
+      
+      // If solid color or no significant crop needed
+      if (top >= bottom || left >= right || (top === 0 && bottom === canvas.height && left === 0 && right === canvas.width)) {
+        const originalText = autoTrimBtn.innerText;
+        autoTrimBtn.innerText = '✅';
+        setTimeout(() => { autoTrimBtn.innerText = originalText; }, 1000);
+        return;
+      }
+      
+      const trimCanvas = document.createElement('canvas');
+      trimCanvas.width = right - left;
+      trimCanvas.height = bottom - top;
+      const trimCtx = trimCanvas.getContext('2d');
+      trimCtx.drawImage(canvas, left, top, trimCanvas.width, trimCanvas.height, 0, 0, trimCanvas.width, trimCanvas.height);
+      
+      handleImageUpload(trimCanvas.toDataURL('image/png'));
+      
+      const originalText = autoTrimBtn.innerText;
+      autoTrimBtn.innerText = '✂️✨';
+      setTimeout(() => { autoTrimBtn.innerText = originalText; }, 1000);
+    };
+    img.src = imageDataUrl;
+  });
+
+  // Manual Crop Button
   cropBtn.addEventListener('click', (e) => {
     e.stopPropagation(); // prevent triggering dropZone click
     if (!imageDataUrl) return;
