@@ -196,20 +196,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (img.height > img.width * 1.3) {
         // Case 1: Mobile Ozon Card
-        // The product image is always a perfect square at the very top.
+        // Product images can be square (1:1) or tall (3:4).
+        // We crop down to 62% of the height to safely include tall products while avoiding the price/buttons.
         cropX = 0;
         cropY = 0;
         cropW = img.width;
-        cropH = img.width;
+        cropH = img.height * 0.62;
         isSmartCrop = true;
       } else if (img.width > img.height * 1.1) {
         // Case 2: Desktop Ozon Screenshot
         // Standard layout: Blue header at top (~8%), thumbnails on left (~10%).
-        // Main image is a large square in the left-center.
         cropX = img.width * 0.10;
         cropY = img.height * 0.08;
-        cropH = img.height * 0.85;
-        cropW = cropH; // Assume square aspect ratio for main image
+        // Don't cut off the bottom! Extend it all the way down to 92%.
+        cropH = img.height * 0.92;
+        // Main image takes up about 55% of the width
+        cropW = img.width * 0.55; 
         isSmartCrop = true;
       } else {
         // Case 3: Square-ish image, fallback to mathematical border trim
