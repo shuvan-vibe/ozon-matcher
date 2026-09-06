@@ -184,61 +184,61 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsDataURL(file);
   }
 
-  // Cropper logic
-  // Auto-Trim Button
+  // Auto-Trim Button (Smart Layout Crop)
   autoTrimBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!imageDataUrl) return;
     
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      
-      // Sample top-left corner as background color
-      const bgR = data[0], bgG = data[1], bgB = data[2], bgA = data[3];
-      const tolerance = 20; 
-      
-      function isBg(r, g, b, a) {
-        if (a === 0 && bgA === 0) return true; // Check transparency
-        return Math.abs(r - bgR) <= tolerance && Math.abs(g - bgG) <= tolerance && Math.abs(b - bgB) <= tolerance;
-      }
-      
-      let top = 0, bottom = canvas.height, left = 0, right = canvas.width;
-      
-      outTop: for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-          let i = (y * canvas.width + x) * 4;
-          if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { top = y; break outTop; }
+      let cropX = 0, cropY = 0, cropW = img.width, cropH = img.height;
+      let isSmartCrop = false;
+
+      if (img.height > img.width * 1.3) {
+        // Case 1: Mobile Ozon Card
+        // The product image is always a perfect square at the very top.
+        cropX = 0;
+        cropY = 0;
+        cropW = img.width;
+        cropH = img.width;
+        isSmartCrop = true;
+      } else if (img.width > img.height * 1.1) {
+        // Case 2: Desktop Ozon Screenshot
+        // Standard layout: Blue header at top (~8%), thumbnails on left (~10%).
+        // Main image is a large square in the left-center.
+        cropX = img.width * 0.10;
+        cropY = img.height * 0.08;
+        cropH = img.height * 0.85;
+        cropW = cropH; // Assume square aspect ratio for main image
+        isSmartCrop = true;
+      } else {
+        // Case 3: Square-ish image, fallback to mathematical border trim
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width; canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        
+        const bgR = data[0], bgG = data[1], bgB = data[2], bgA = data[3];
+        const tolerance = 20; 
+        function isBg(r, g, b, a) {
+          if (a === 0 && bgA === 0) return true;
+          return Math.abs(r - bgR) <= tolerance && Math.abs(g - bgG) <= tolerance && Math.abs(b - bgB) <= tolerance;
+        }
+        
+        let t = 0, b = canvas.height, l = 0, r = canvas.width;
+        outTop: for (let y = 0; y < canvas.height; y++) { for (let x = 0; x < canvas.width; x++) { let i = (y * canvas.width + x) * 4; if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { t = y; break outTop; } } }
+        outBottom: for (let y = canvas.height - 1; y >= 0; y--) { for (let x = 0; x < canvas.width; x++) { let i = (y * canvas.width + x) * 4; if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { b = y + 1; break outBottom; } } }
+        outLeft: for (let x = 0; x < canvas.width; x++) { for (let y = t; y < b; y++) { let i = (y * canvas.width + x) * 4; if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { l = x; break outLeft; } } }
+        outRight: for (let x = canvas.width - 1; x >= 0; x--) { for (let y = t; y < b; y++) { let i = (y * canvas.width + x) * 4; if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { r = x + 1; break outRight; } } }
+        
+        if (t < b && l < r && !(t === 0 && b === canvas.height && l === 0 && r === canvas.width)) {
+          cropX = l; cropY = t; cropW = r - l; cropH = b - t;
+          isSmartCrop = true;
         }
       }
-      outBottom: for (let y = canvas.height - 1; y >= 0; y--) {
-        for (let x = 0; x < canvas.width; x++) {
-          let i = (y * canvas.width + x) * 4;
-          if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { bottom = y + 1; break outBottom; }
-        }
-      }
-      outLeft: for (let x = 0; x < canvas.width; x++) {
-        for (let y = top; y < bottom; y++) {
-          let i = (y * canvas.width + x) * 4;
-          if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { left = x; break outLeft; }
-        }
-      }
-      outRight: for (let x = canvas.width - 1; x >= 0; x--) {
-        for (let y = top; y < bottom; y++) {
-          let i = (y * canvas.width + x) * 4;
-          if (!isBg(data[i], data[i+1], data[i+2], data[i+3])) { right = x + 1; break outRight; }
-        }
-      }
       
-      // If solid color or no significant crop needed
-      if (top >= bottom || left >= right || (top === 0 && bottom === canvas.height && left === 0 && right === canvas.width)) {
+      if (!isSmartCrop) {
         const originalText = autoTrimBtn.innerText;
         autoTrimBtn.innerText = '✅';
         setTimeout(() => { autoTrimBtn.innerText = originalText; }, 1000);
@@ -246,10 +246,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       const trimCanvas = document.createElement('canvas');
-      trimCanvas.width = right - left;
-      trimCanvas.height = bottom - top;
+      trimCanvas.width = cropW;
+      trimCanvas.height = cropH;
       const trimCtx = trimCanvas.getContext('2d');
-      trimCtx.drawImage(canvas, left, top, trimCanvas.width, trimCanvas.height, 0, 0, trimCanvas.width, trimCanvas.height);
+      // Fix potential out-of-bounds rendering by filling background with white first
+      trimCtx.fillStyle = '#ffffff';
+      trimCtx.fillRect(0, 0, cropW, cropH);
+      trimCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
       
       handleImageUpload(trimCanvas.toDataURL('image/png'));
       
