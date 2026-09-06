@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isMatch = false;
     if (data.scanStatus) {
       statusEl.textContent = data.scanStatus;
-      if (!data.isScanning && data.scanStatus.includes('Match found')) {
+      if (!data.isScanning && data.scanStatus.toLowerCase().includes('match')) {
         isMatch = true;
       }
     }
@@ -491,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (area === 'local' && changes.isScanning && !changes.isScanning.newValue) {
       if (timerInterval) clearInterval(timerInterval);
       chrome.storage.local.get(['scanStatus'], (data) => {
-        if (data.scanStatus && data.scanStatus.includes('Match found')) {
+        if (data.scanStatus && data.scanStatus.toLowerCase().includes('match')) {
           setScanningState(false, false, true);
         } else {
           setScanningState(false, false, false);
