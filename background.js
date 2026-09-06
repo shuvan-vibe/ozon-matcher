@@ -1,10 +1,16 @@
+function restoreIcon() {
+  chrome.storage.local.get(['iconIndex'], (data) => {
+    if (data.iconIndex) {
+      const iconPath = data.iconIndex === 1 ? 'icon128.png' : `icon${data.iconIndex}.png`;
+      chrome.action.setIcon({ path: iconPath });
+    }
+  });
+}
+
 // Restore user's custom icon on startup
-chrome.storage.local.get(['iconIndex'], (data) => {
-  if (data.iconIndex) {
-    const iconPath = data.iconIndex === 1 ? 'icon128.png' : `icon${data.iconIndex}.png`;
-    chrome.action.setIcon({ path: iconPath });
-  }
-});
+chrome.runtime.onStartup.addListener(restoreIcon);
+chrome.runtime.onInstalled.addListener(restoreIcon);
+restoreIcon(); // Also run once immediately in case service worker just woke up
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'fetchImage') {
