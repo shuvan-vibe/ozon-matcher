@@ -97,8 +97,17 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       if (data.scannedCount > 0) scanCounter.style.display = 'block';
     }
+    
+    let isMatch = false;
     if (data.scanStatus) {
       statusEl.textContent = data.scanStatus;
+      if (!data.isScanning && data.scanStatus.includes('Match found')) {
+        isMatch = true;
+      }
+    }
+    
+    if (!data.isScanning) {
+      setScanningState(false, false, isMatch);
     }
     
     // Ensure the Start Scan button is enabled if inputs are populated from storage
