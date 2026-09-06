@@ -134,6 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.action.setIcon({ path: iconPath });
   });
 
+  function readFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => handleImageUpload(e.target.result);
+    reader.readAsDataURL(file);
+  }
+
   dropZone.addEventListener('click', () => fileInput.click());
 
   fileInput.addEventListener('change', (e) => {
