@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (data.scanStatus) {
       statusEl.textContent = data.scanStatus;
     }
+    
+    // Ensure the Start Scan button is enabled if inputs are populated from storage
+    updateStartBtn();
   });
 
   function handleImageUpload(dataUrl) {
