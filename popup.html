@@ -26,9 +26,12 @@
 
   <!-- Main Actions -->
   <div class="action-bar">
-    <button id="start-btn" class="btn-primary" disabled>Start Scan</button>
-    <button id="pause-btn" class="btn-warning" style="display:none;">⏸ Pause</button>
-    <button id="stop-btn" class="btn-danger" style="display:none;">Stop Scan</button>
+    <button id="start-btn" type="button" disabled>Start Scan</button>
+    <button id="continue-scan-btn" type="button" style="display:none;">Not this one? Continue Scan</button>
+    <div style="display: flex; gap: 8px;">
+      <button id="pause-btn" class="btn-warning" style="display:none;">⏸ Pause</button>
+      <button id="stop-btn" class="btn-danger" style="display:none;">Stop Scan</button>
+    </div>
   </div>
 
   <!-- Search Term -->

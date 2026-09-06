@@ -57,6 +57,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .action-bar button { flex: 1; padding: 12px; font-size: 14px; }
 .btn-primary { background-color: var(--accent-blue); color: white; }
 .btn-primary:hover:not(:disabled) { background-color: var(--accent-blue-hover); }
+#start-btn:hover:not(:disabled) { background-color: #0d47a1; }
+#start-btn:disabled { background-color: var(--border-color); color: var(--text-secondary); cursor: not-allowed; }
+
+#continue-scan-btn { width: 100%; padding: 12px; background-color: #dc3545; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; margin-bottom: 20px; }
+#continue-scan-btn:hover { background-color: #c82333; }
 .btn-warning { background-color: var(--accent-yellow); color: #000; }
 .btn-danger { background-color: var(--accent-red); color: white; }
 

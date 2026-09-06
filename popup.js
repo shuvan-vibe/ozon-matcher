@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cropBtn = document.getElementById('crop-btn');
   const autoTrimBtn = document.getElementById('auto-trim-btn');
   const startBtn = document.getElementById('start-btn');
+  const continueScanBtn = document.getElementById('continue-scan-btn');
   const pauseBtn = document.getElementById('pause-btn');
   const stopBtn = document.getElementById('stop-btn');
   const clearBtn = document.getElementById('clear-btn');
@@ -36,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const totalIcons = 4;
   let timerInterval = null;
   let currentScanStartTime = null;
+  let matchTimeout = null;
 
   function updateTimerUI() {
     if (!currentScanStartTime) return;
@@ -105,6 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateStartBtn() {
     startBtn.disabled = !(imageDataUrl && searchTermInput.value.trim());
+    if (continueScanBtn && continueScanBtn.style.display === 'block') {
+       if (matchTimeout) clearTimeout(matchTimeout);
+       continueScanBtn.style.display = 'none';
+       startBtn.style.display = 'block';
+    }
   }
 
   searchTermInput.addEventListener('input', updateStartBtn);
@@ -330,9 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
     historyModal.style.display = 'none';
   });
 
-  function setScanningState(isScanning, isPaused = false) {
+  function setScanningState(isScanning, isPaused = false, isMatch = false) {
     if (isScanning) {
       startBtn.style.display = 'none';
+      if (continueScanBtn) continueScanBtn.style.display = 'none';
       pauseBtn.style.display = 'block';
       stopBtn.style.display = 'block';
       scanCounter.style.display = 'block';
@@ -348,11 +356,41 @@ document.addEventListener('DOMContentLoaded', () => {
         pauseBtn.style.color = '#000';
       }
     } else {
-      startBtn.style.display = 'block';
       pauseBtn.style.display = 'none';
       stopBtn.style.display = 'none';
+      
+      if (isMatch && continueScanBtn) {
+        startBtn.style.display = 'none';
+        continueScanBtn.style.display = 'block';
+        
+        if (matchTimeout) clearTimeout(matchTimeout);
+        matchTimeout = setTimeout(() => {
+          continueScanBtn.style.display = 'none';
+          startBtn.style.display = 'block';
+        }, 30000);
+      } else {
+        startBtn.style.display = 'block';
+        if (continueScanBtn) continueScanBtn.style.display = 'none';
+      }
       // Deliberately NOT hiding scanCounter and scanTimerContainer so they persist
     }
+  }
+
+  if (continueScanBtn) {
+    continueScanBtn.addEventListener('click', async () => {
+      if (matchTimeout) clearTimeout(matchTimeout);
+      
+      setScanningState(true, false);
+      chrome.storage.local.set({ isScanning: true, isPaused: false, scanStatus: 'Resuming scan...' });
+      
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length > 0) {
+          chrome.tabs.sendMessage(tabs[0].id, { action: 'resumeScan' }, () => {
+            const ignore = chrome.runtime.lastError;
+          });
+        }
+      });
+    });
   }
 
   startBtn.addEventListener('click', async () => {
@@ -427,7 +465,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (area === 'local' && changes.isScanning && !changes.isScanning.newValue) {
       if (timerInterval) clearInterval(timerInterval);
-      setScanningState(false);
+      chrome.storage.local.get(['scanStatus'], (data) => {
+        if (data.scanStatus && data.scanStatus.includes('Match found')) {
+          setScanningState(false, false, true);
+        } else {
+          setScanningState(false, false, false);
+        }
+      });
     }
     if (area === 'local' && changes.isPaused) {
       // Sync pause state if changed from another popup instance

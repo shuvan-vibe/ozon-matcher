@@ -197,67 +197,46 @@ async function processCard(card, src) {
 }
 
 function highlightCard(card, matchPercent) {
-  card.style.border = '5px solid #39ff14';
+  card.style.border = '3px solid #39ff14';
   card.style.position = 'relative';
-  card.style.transform = 'scale(1.05)';
   card.style.transition = 'all 0.3s';
-  card.style.boxShadow = '0 0 20px rgba(57, 255, 20, 0.5)';
   
   const overlay = document.createElement('div');
   overlay.style.position = 'absolute';
-  overlay.style.top = '0';
-  overlay.style.left = '0';
-  overlay.style.width = '100%';
-  overlay.style.height = '100%';
-  overlay.style.backgroundColor = 'rgba(57, 255, 20, 0.4)';
-  overlay.style.color = '#000';
-  overlay.style.fontWeight = 'bold';
-  overlay.style.fontSize = '18px';
-  overlay.style.textAlign = 'center';
-  overlay.style.padding = '10px';
+  overlay.style.top = '10px';
+  overlay.style.right = '10px';
   overlay.style.zIndex = '999';
-  overlay.style.boxSizing = 'border-box';
   overlay.style.pointerEvents = 'none';
   overlay.style.display = 'flex';
   overlay.style.flexDirection = 'column';
-  overlay.style.justifyContent = 'center';
-  overlay.style.alignItems = 'center';
+  overlay.style.alignItems = 'flex-end';
   
   const textEl = document.createElement('div');
-  textEl.innerText = `MATCH FOUND: ${matchPercent.toFixed(1)}%`;
+  textEl.innerText = `✅ MATCH: ${matchPercent.toFixed(1)}%`;
   textEl.style.backgroundColor = '#fff';
+  textEl.style.color = '#000';
+  textEl.style.fontWeight = 'bold';
+  textEl.style.fontSize = '14px';
   textEl.style.padding = '4px 8px';
   textEl.style.borderRadius = '4px';
-  textEl.style.marginBottom = '10px';
+  textEl.style.marginBottom = '6px';
+  textEl.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
   overlay.appendChild(textEl);
   
   const btnContainer = document.createElement('div');
-  btnContainer.style.display = 'flex';
-  btnContainer.style.gap = '8px';
   btnContainer.style.pointerEvents = 'auto'; // allow clicks on buttons
   
   const hideBtn = document.createElement('button');
   hideBtn.innerText = 'OK, hide';
-  hideBtn.style.padding = '6px 12px';
+  hideBtn.style.padding = '4px 8px';
   hideBtn.style.backgroundColor = '#28a745';
   hideBtn.style.color = '#fff';
   hideBtn.style.border = 'none';
   hideBtn.style.borderRadius = '4px';
   hideBtn.style.cursor = 'pointer';
-  hideBtn.style.fontSize = '14px';
-  
-  const continueBtn = document.createElement('button');
-  continueBtn.innerText = 'Not this one? Continue';
-  continueBtn.style.padding = '6px 12px';
-  continueBtn.style.backgroundColor = '#dc3545';
-  continueBtn.style.color = '#fff';
-  continueBtn.style.border = 'none';
-  continueBtn.style.borderRadius = '4px';
-  continueBtn.style.cursor = 'pointer';
-  continueBtn.style.fontSize = '14px';
+  hideBtn.style.fontSize = '12px';
   
   btnContainer.appendChild(hideBtn);
-  btnContainer.appendChild(continueBtn);
   overlay.appendChild(btnContainer);
   
   function hideOverlay() {
@@ -265,42 +244,15 @@ function highlightCard(card, matchPercent) {
     if (overlay.parentNode) {
       overlay.parentNode.removeChild(overlay);
     }
-    card.style.transform = 'none';
-    card.style.boxShadow = 'none';
     card.style.border = 'none';
   }
   
-  let hideTimeout = setTimeout(hideOverlay, 5000);
+  let hideTimeout = setTimeout(hideOverlay, 3000);
   
   hideBtn.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     hideOverlay();
-  };
-  
-  continueBtn.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    clearTimeout(hideTimeout);
-    
-    // Dim highlight
-    card.style.border = '3px solid #ffc107';
-    card.style.boxShadow = 'none';
-    card.style.transform = 'none';
-    overlay.style.backgroundColor = 'rgba(255, 193, 7, 0.2)';
-    textEl.innerText = `Skipped (${matchPercent.toFixed(1)}%)`;
-    textEl.style.color = '#000';
-    btnContainer.style.display = 'none';
-    
-    resumeScanner();
-    
-    // Auto-hide the skipped overlay after 3 seconds too
-    setTimeout(() => {
-      if (overlay.parentNode) {
-        overlay.parentNode.removeChild(overlay);
-      }
-    }, 3000);
   };
   
   card.appendChild(overlay);
@@ -341,6 +293,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   } else if (request.action === 'stopScan') {
     stopScanner();
+    sendResponse({ success: true });
+  } else if (request.action === 'resumeScan') {
+    resumeScanner();
     sendResponse({ success: true });
   }
 });
