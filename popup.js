@@ -213,12 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function readFile(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => handleImageUpload(e.target.result);
-    reader.readAsDataURL(file);
-  }
-
   // Auto-Trim Button (Smart Layout Crop)
   autoTrimBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -442,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
       scanStatus: 'Starting scan in new tab...'
     });
 
-    const targetUrl = `https://www.ozon.ru/search/?text=${encodeURIComponent(searchTerm)}`;
+    const targetUrl = `https://www.ozon.ru/search/?from_global=true&text=${encodeURIComponent(searchTerm)}`;
     chrome.tabs.create({ url: targetUrl });
   });
 
