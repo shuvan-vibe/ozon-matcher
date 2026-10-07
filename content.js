@@ -114,7 +114,7 @@ function startAutoScroll() {
     // This ensures it scrolls down from the user's current position without jumping.
     window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' });
     
-  }, 1000);
+  }, 500);
 }
 
 function startObserver() {
@@ -147,24 +147,6 @@ async function scanCurrentCards() {
     if (!src || processedUrls.has(src)) continue;
     
     if (src.startsWith('data:')) continue; // Skip lazy placeholders
-
-    // Check price if filters are set
-    if (minPrice !== null || maxPrice !== null) {
-      // Remove spaces and thin spaces from text
-      const text = card.innerText.replace(/[\s\u00A0\u2009]/g, '');
-      const prices = [...text.matchAll(/(\d+)[₽р]/gi)].map(m => parseInt(m[1], 10));
-      if (prices.length > 0) {
-        const price = Math.min(...prices); // Current discounted price is usually the lowest
-        if (minPrice !== null && price < minPrice) {
-          card.dataset.scanned = "true";
-          continue; // Too cheap
-        }
-        if (maxPrice !== null && price > maxPrice) {
-          card.dataset.scanned = "true";
-          continue; // Too expensive
-        }
-      }
-    }
 
     card.dataset.scanned = "true";
     processedUrls.add(src);
