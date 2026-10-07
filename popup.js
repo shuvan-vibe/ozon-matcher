@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const pauseBtn = document.getElementById('pause-btn');
   const stopBtn = document.getElementById('stop-btn');
   const clearBtn = document.getElementById('clear-btn');
+  const clearPriceBtn = document.getElementById('clear-price-btn');
+  const minPriceInput = document.getElementById('min-price');
+  const maxPriceInput = document.getElementById('max-price');
   const searchTermInput = document.getElementById('search-term');
   const statusEl = document.getElementById('status');
   const thresholdInput = document.getElementById('threshold');
@@ -59,8 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex', 'scanStartTime', 'lastMatchTime', 'notificationsEnabled'], (data) => {
+  chrome.storage.local.get(['isScanning', 'isPaused', 'searchTerm', 'imageDataUrl', 'scanStatus', 'matchThreshold', 'scannedCount', 'iconIndex', 'scanStartTime', 'lastMatchTime', 'notificationsEnabled', 'minPrice', 'maxPrice'], (data) => {
     if (data.searchTerm) searchTermInput.value = data.searchTerm;
+    if (data.minPrice) minPriceInput.value = data.minPrice;
+    if (data.maxPrice) maxPriceInput.value = data.maxPrice;
     if (data.imageDataUrl) {
       imageDataUrl = data.imageDataUrl;
       previewImg.src = data.imageDataUrl;
@@ -156,6 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
     searchTermInput.value = '';
     chrome.storage.local.remove(['searchTerm']);
     updateStartBtn();
+  });
+
+  clearPriceBtn.addEventListener('click', () => {
+    minPriceInput.value = '';
+    maxPriceInput.value = '';
+    chrome.storage.local.remove(['minPrice', 'maxPrice']);
   });
 
   notificationsToggle.addEventListener('change', (e) => {
@@ -423,11 +434,15 @@ document.addEventListener('DOMContentLoaded', () => {
     timerInterval = setInterval(updateTimerUI, 100);
 
     const threshold = parseInt(thresholdInput.value, 10) || 65;
+    const minPrice = parseInt(minPriceInput.value, 10) || null;
+    const maxPrice = parseInt(maxPriceInput.value, 10) || null;
 
     await chrome.storage.local.set({
       searchTerm,
       imageDataUrl,
       matchThreshold: threshold,
+      minPrice,
+      maxPrice,
       isScanning: true,
       isPaused: false,
       scannedCount: 0,
@@ -436,7 +451,14 @@ document.addEventListener('DOMContentLoaded', () => {
       scanStatus: 'Starting scan in new tab...'
     });
 
-    const targetUrl = `https://www.ozon.ru/search/?from_global=true&text=${encodeURIComponent(searchTerm)}`;
+    let targetUrl = `https://www.ozon.ru/search/?from_global=true&text=${encodeURIComponent(searchTerm)}`;
+    const mMin = minPriceInput.value.trim();
+    const mMax = maxPriceInput.value.trim();
+    if (mMin || mMax) {
+      const pMin = mMin ? `${mMin}.000` : '';
+      const pMax = mMax ? `${mMax}.000` : '';
+      targetUrl += `&currency_price=${pMin}%3B${pMax}`;
+    }
     chrome.tabs.create({ url: targetUrl });
   });
 

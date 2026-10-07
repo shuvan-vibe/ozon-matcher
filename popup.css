@@ -73,11 +73,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .input-group { margin-bottom: 16px; }
 label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
 .search-row { display: flex; gap: 8px; }
-input[type="text"] {
+input[type="text"], input[type="number"] {
   flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%;
   background-color: var(--panel-bg); color: var(--text-primary); outline: none; box-sizing: border-box;
 }
-input[type="text"]:focus { border-color: var(--accent-blue); }
+input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent-blue); }
 .btn-icon { background-color: var(--panel-bg); border: 1px solid var(--border-color); color: white; padding: 0 12px; }
 .btn-icon:hover { background-color: #333; }
 .btn-secondary { background-color: #444; color: white; padding: 0 16px; }

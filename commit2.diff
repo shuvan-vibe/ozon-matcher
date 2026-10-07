@@ -1,0 +1,108 @@
+diff --git a/content.js b/content.js
+index 3bb8cc0..8f31f85 100644
+--- a/content.js
++++ b/content.js
+@@ -72,6 +72,10 @@ async function initScanner() {
+       chrome.storage.local.set({ scanStatus: 'Scan paused.' });
+     }
+   };
++  refImg.onerror = () => {
++    chrome.storage.local.set({ scanStatus: 'Error loading reference image. Scan stopped.' });
++    stopScanner('Error loading reference image.');
++  };
+   refImg.src = data.imageDataUrl;
+ }
+ 
+@@ -106,7 +110,7 @@ function startAutoScroll() {
+     // This ensures it scrolls down from the user's current position without jumping.
+     window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' });
+     
+-  }, 500);
++  }, 1000);
+ }
+ 
+ function startObserver() {
+@@ -129,6 +133,7 @@ async function scanCurrentCards() {
+   for (let card of cards) {
+     if (!isScanning) break;
+     if (card.dataset.scanned) continue;
++    if (card.dataset.matched) continue;
+     
+     // Grab the actual product image
+     const imgEl = card.querySelector('a.tile-clickable-element img') || card.querySelector('a[href*="/product/"] img') || card.querySelector('img');
+@@ -150,7 +155,11 @@ async function scanCurrentCards() {
+ async function processCard(card, src) {
+   try {
+     const result = await chrome.runtime.sendMessage({ action: 'fetchImage', url: src });
+-    if (!result.success) return;
++    if (!result.success) {
++      delete card.dataset.scanned;
++      processedUrls.delete(src);
++      return;
++    }
+     
+     const checkImg = new Image();
+     checkImg.onload = () => {
+@@ -190,13 +199,21 @@ async function processCard(card, src) {
+         });
+       }
+     };
++    checkImg.onerror = () => {
++      console.warn(`Failed to load check image for hash comparison: ${src}`);
++      delete card.dataset.scanned;
++      processedUrls.delete(src);
++    };
+     checkImg.src = result.dataUrl;
+   } catch (e) {
+     console.error('Error checking image:', e);
++    delete card.dataset.scanned;
++    processedUrls.delete(src);
+   }
+ }
+ 
+ function highlightCard(card, matchPercent) {
++  card.dataset.matched = "true";
+   card.style.border = '3px solid #39ff14';
+   card.style.position = 'relative';
+   card.style.transition = 'all 0.3s';
+@@ -265,6 +282,14 @@ function highlightCard(card, matchPercent) {
+ function resumeScanner() {
+   isScanning = true;
+   isPaused = false;
++  
++  // Clear processed state to catch any cards that were skipped or in-flight when stopped
++  // We do NOT clear cards that were successfully matched so we don't re-match them instantly
++  processedUrls.clear();
++  document.querySelectorAll('.tile-root[data-scanned="true"]:not([data-matched="true"])').forEach(card => {
++    delete card.dataset.scanned;
++  });
++
+   chrome.storage.local.set({ isScanning: true, isPaused: false, scanStatus: 'Scanning page...' });
+   startObserver();
+   scanCurrentCards();
+diff --git a/popup.js b/popup.js
+index 93dc28b..a76a52d 100644
+--- a/popup.js
++++ b/popup.js
+@@ -213,12 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
+     }
+   });
+ 
+-  function readFile(file) {
+-    const reader = new FileReader();
+-    reader.onload = (e) => handleImageUpload(e.target.result);
+-    reader.readAsDataURL(file);
+-  }
+-
+   // Auto-Trim Button (Smart Layout Crop)
+   autoTrimBtn.addEventListener('click', (e) => {
+     e.stopPropagation();
+@@ -442,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
+       scanStatus: 'Starting scan in new tab...'
+     });
+ 
+-    const targetUrl = `https://www.ozon.ru/search/?text=${encodeURIComponent(searchTerm)}`;
++    const targetUrl = `https://www.ozon.ru/search/?from_global=true&text=${encodeURIComponent(searchTerm)}`;
+     chrome.tabs.create({ url: targetUrl });
+   });
+ 

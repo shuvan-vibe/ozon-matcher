@@ -1,0 +1,56 @@
+diff --git a/popup.js b/popup.js
+index 826d62f..93dc28b 100644
+--- a/popup.js
++++ b/popup.js
+@@ -275,27 +275,25 @@ document.addEventListener('DOMContentLoaded', () => {
+         }
+       }
+       
+-      if (!isSmartCrop) {
++      if (isSmartCrop) {
++        const trimCanvas = document.createElement('canvas');
++        trimCanvas.width = cropW;
++        trimCanvas.height = cropH;
++        const trimCtx = trimCanvas.getContext('2d');
++        trimCtx.fillStyle = '#ffffff';
++        trimCtx.fillRect(0, 0, cropW, cropH);
++        trimCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
++        
++        handleImageUpload(trimCanvas.toDataURL('image/png'), true);
++        
++        const originalText = autoTrimBtn.innerText;
++        autoTrimBtn.innerText = '✂️✨';
++        setTimeout(() => { autoTrimBtn.innerText = originalText; }, 1000);
++      } else {
+         const originalText = autoTrimBtn.innerText;
+         autoTrimBtn.innerText = '✅';
+         setTimeout(() => { autoTrimBtn.innerText = originalText; }, 1000);
+-        return;
+       }
+-      
+-      const trimCanvas = document.createElement('canvas');
+-      trimCanvas.width = cropW;
+-      trimCanvas.height = cropH;
+-      const trimCtx = trimCanvas.getContext('2d');
+-      // Fix potential out-of-bounds rendering by filling background with white first
+-      trimCtx.fillStyle = '#ffffff';
+-      trimCtx.fillRect(0, 0, cropW, cropH);
+-      trimCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+-      
+-      handleImageUpload(trimCanvas.toDataURL('image/png'));
+-      
+-      const originalText = autoTrimBtn.innerText;
+-      autoTrimBtn.innerText = '✂️✨';
+-      setTimeout(() => { autoTrimBtn.innerText = originalText; }, 1000);
+     };
+     img.src = imageDataUrl;
+   });
+@@ -325,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
+     if (cropper) {
+       const canvas = cropper.getCroppedCanvas();
+       if (canvas) {
+-        setImage(canvas.toDataURL());
++        handleImageUpload(canvas.toDataURL(), false);
+       }
+       cropper.destroy();
+       cropper = null;

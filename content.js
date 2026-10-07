@@ -43,6 +43,8 @@ let isScanning = false;
 let isPaused = false;
 let refHash = null;
 let matchThreshold = 65;
+let minPrice = null;
+let maxPrice = null;
 let processedUrls = new Set();
 let observer = null;
 let scrollInterval = null;
@@ -50,12 +52,14 @@ let scannedCount = 0;
 let captchaNotified = false;
 
 async function initScanner() {
-  const data = await chrome.storage.local.get(['isScanning', 'isPaused', 'imageDataUrl', 'matchThreshold']);
+  const data = await chrome.storage.local.get(['isScanning', 'isPaused', 'imageDataUrl', 'matchThreshold', 'minPrice', 'maxPrice']);
   if (!data.isScanning || !data.imageDataUrl) return;
 
   isScanning = true;
   isPaused = data.isPaused || false;
   matchThreshold = data.matchThreshold || 65;
+  minPrice = data.minPrice || null;
+  maxPrice = data.maxPrice || null;
   processedUrls.clear();
   scannedCount = 0;
   chrome.storage.local.set({ scanStatus: 'Computing reference hash...', scannedCount: 0 });
@@ -143,6 +147,24 @@ async function scanCurrentCards() {
     if (!src || processedUrls.has(src)) continue;
     
     if (src.startsWith('data:')) continue; // Skip lazy placeholders
+
+    // Check price if filters are set
+    if (minPrice !== null || maxPrice !== null) {
+      // Remove spaces and thin spaces from text
+      const text = card.innerText.replace(/[\s\u00A0\u2009]/g, '');
+      const prices = [...text.matchAll(/(\d+)[₽р]/gi)].map(m => parseInt(m[1], 10));
+      if (prices.length > 0) {
+        const price = Math.min(...prices); // Current discounted price is usually the lowest
+        if (minPrice !== null && price < minPrice) {
+          card.dataset.scanned = "true";
+          continue; // Too cheap
+        }
+        if (maxPrice !== null && price > maxPrice) {
+          card.dataset.scanned = "true";
+          continue; // Too expensive
+        }
+      }
+    }
 
     card.dataset.scanned = "true";
     processedUrls.add(src);
